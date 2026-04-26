@@ -976,6 +976,34 @@ jobs:
             fi
           fi
 
+      - name: 注入DroidSpaces内核配置
+        shell: bash
+        run: |
+          cd "$KERNEL_ROOT/common"
+          # 判断内核版本
+          if [[ "${{ inputs.kernel_version }}" =~ ^6\.(1|6|12|[1-9][0-9]+) ]]; then
+            wget https://github.com/loeveo/Droidspaces-OSS/raw/refs/heads/main/Documentation/resources/kernel-patches/GKI/below-kernel-6.12/001.GKI-below-6.12-fix_sysvipc_kabi_6_7_8.patch
+             patch -p1 -N -F 3 < '001.GKI-below-6.12-fix_sysvipc_kabi_6_7_8.patch'
+          fi
+          # 以下为原有配置追加
+          # 修复 [✗] PID namespace 和 [✗] IPC namespace
+          echo "CONFIG_SYSCTL=y" >> ./arch/arm64/configs/gki_defconfig
+          echo "CONFIG_SYSVIPC=y" >> ./arch/arm64/configs/gki_defconfig
+          echo "CONFIG_POSIX_MQUEUE=y" >> ./arch/arm64/configs/gki_defconfig
+          echo "CONFIG_NAMESPACES=y" >> ./arch/arm64/configs/gki_defconfig
+          echo "CONFIG_PID_NS=y" >> ./arch/arm64/configs/gki_defconfig
+          echo "CONFIG_IPC_NS=y" >> ./arch/arm64/configs/gki_defconfig
+          echo "CONFIG_UTS_NS=y" >> ./arch/arm64/configs/gki_defconfig
+          echo "CONFIG_USER_NS=y" >> ./arch/arm64/configs/gki_defconfig
+          # 修复 [✗] devtmpfs support
+          echo "CONFIG_DEVTMPFS=y" >> ./arch/arm64/configs/gki_defconfig
+          echo "CONFIG_DEVTMPFS_MOUNT=y" >> ./arch/arm64/configs/gki_defconfig
+          # 修复 cgroup devices support
+          echo "CONFIG_CGROUPS=y" >> ./arch/arm64/configs/gki_defconfig
+          echo "CONFIG_CGROUP_DEVICE=y" >> ./arch/arm64/configs/gki_defconfig
+          echo "CONFIG_CGROUP_PIDS=y" >> ./arch/arm64/configs/gki_defconfig
+          echo "CONFIG_MEMCG=y" >> ./arch/arm64/configs/gki_defconfig
+
       - name: 编译内核
         uses: nick-fields/retry@v4
         with:
